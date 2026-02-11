@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Brightness & Contrast Adjustment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f4f4f4;
+            padding: 20px;
+        }
+        canvas {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        input[type="range"] {
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Image Brightness & Contrast Web App</h1>
+
+    <input type="file" id="upload" accept="image/*"><br>
+
+    <div class="controls">
+        <p>Brightness: <span id="bVal">0</span></p>
+        <input type="range" id="brightness" min="-100" max="100" value="0">
+
+        <p>Contrast: <span id="cVal">1</span></p>
+        <input type="range" id="contrast" min="0" max="3" step="0.1" value="1">
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const upload = document.getElementById('upload');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const brightness = document.getElementById('brightness');
+        const contrast = document.getElementById('contrast');
+        const bVal = document.getElementById('bVal');
+        const cVal = document.getElementById('cVal');
+
+        let originalImageData;
+
+        upload.addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        function adjustImage() {
+            if (!originalImageData) return;
+
+            const alpha = parseFloat(contrast.value);
+            const beta = parseInt(brightness.value);
+
+            bVal.textContent = beta;
+            cVal.textContent = alpha;
+
+            let imageData = new ImageData(
+                new Uint8ClampedArray(originalImageData.data),
+                originalImageData.width,
+                originalImageData.height
+            );
+
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                imageData.data[i] = alpha * imageData.data[i] + beta;     // R
+                imageData.data[i+1] = alpha * imageData.data[i+1] + beta; // G
+                imageData.data[i+2] = alpha * imageData.data[i+2] + beta; // B
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        brightness.addEventListener('input', adjustImage);
+        contrast.addEventListener('input', adjustImage);
+    </script>
+
+</body>
+</html>
